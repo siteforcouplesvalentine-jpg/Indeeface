@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aira Hunter Pro Max</title>
+    <style>
+        :root {
+            --bg-color: #0e1117;
+            --gemini-blue: #4285f4;
+            --gemini-purple: #9b72cb;
+            --input-bg: #1e1f20;
+            --sidebar-bg: #17191c;
+            --danger: #ff4b2b;
+            --premium-gold: #ffd700;
+            --accent-color: var(--gemini-blue);
+            --glow-color: transparent;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body, html { margin: 0; padding: 0; height: 100dvh; width: 100vw; background: var(--bg-color); color: white; font-family: 'Google Sans', sans-serif; overflow: hidden; display: flex; flex-direction: column; }
+
+        header { padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; z-index: 1002; position: relative; }
+        .menu-btn { font-size: 30px; cursor: pointer; color: #9aa0a6; }
+        
+        /* INVISIBLE MAIN GATE */
+        .secret-gate { width: 80px; height: 50px; cursor: pointer; position: absolute; right: 0; top: 0; background: transparent; }
+
+        #sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: var(--sidebar-bg); z-index: 2001; transition: 0.3s ease; padding: 25px; border-right: 1px solid rgba(255,255,255,0.1); }
+        #sidebar.open { transform: translateX(280px); }
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; display: none; backdrop-filter: blur(4px); }
+
+        #chat-area { flex-grow: 1; display: flex; flex-direction: column; padding: 20px; overflow-y: auto; padding-bottom: 120px; }
+        
+        .ai-reply-box { 
+            background: rgba(255, 255, 255, 0.05); 
+            padding: 15px; border-radius: 18px; 
+            max-width: 85%; position: relative; overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 10px;
+        }
+        
+        .thinking .ai-reply-box::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 200%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(66, 133, 244, 0.2), rgba(155, 114, 203, 0.2), transparent);
+            animation: geminiWave 1.5s infinite;
+        }
+        @keyframes geminiWave { 0% { left: -100%; } 100% { left: 100%; } }
+
+        .bottom-section { position: fixed; bottom: 0; left: 0; width: 100%; padding: 15px 15px 35px; display: flex; justify-content: center; z-index: 100; flex-direction: column; align-items: center; }
+        
+        .input-pill { 
+            width: 100%; max-width: 700px; background: var(--input-bg); border-radius: 35px; 
+            display: flex; align-items: center; padding: 5px 18px; 
+            border: 1px solid #333; transition: 0.3s ease;
+        }
+        .input-pill:focus-within {
+            border: 1px solid var(--accent-color);
+            box-shadow: 0 0 20px var(--glow-color);
+        }
+
+        input { background: none; border: none; color: white; flex-grow: 1; padding: 12px 0; outline: none; font-size: 16px; margin-left: 10px; }
+
+        .mic-container { display: flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; margin: 0 10px; width: 40px; height: 30px; }
+        .bar { width: 3px; height: 8px; background: var(--accent-color); border-radius: 10px; transition: 0.3s; }
+        .mic-container.active .bar { animation: wave 0.6s infinite ease-in-out; background: var(--danger); }
+        @keyframes wave { 0%, 100% { height: 8px; } 50% { height: 20px; } }
+
+        /* SECRET & ADMIN UI */
+        #secret-room, #admin-pannel { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 3000; display: none; flex-direction: column; }
+        #secret-room { background: #050505; }
+        #admin-pannel { background: #000; z-index: 4000; padding: 20px; }
+        
+        #secret-chat-display { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .secret-msg { padding: 12px 16px; border-radius: 15px; max-width: 80%; font-size: 14px; }
+        .user-secret { align-self: flex-end; background: var(--gemini-purple); color: white; }
+        .aira-secret { align-self: flex-start; background: #1a1a1a; border: 1px solid #333; color: #ddd; }
+
+        .admin-btn { width: 100%; padding: 15px; margin: 10px 0; background: #111; border: 1px solid #333; color: white; border-radius: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <h2 style="color: var(--accent-color);">Aira Hunter</h2>
+        <div style="padding: 15px; cursor: pointer; border-bottom: 1px solid #222;" onclick="location.reload()">✨ New Chat</div>
+        <div style="padding: 15px; cursor: pointer; color: var(--premium-gold);" onclick="upgradeToPremium()">💎 Premium Mode</div>
+    </div>
+    <div id="overlay" onclick="closeAll()"></div>
+
+    <header>
+        <div class="menu-btn" onclick="toggleMenu()">☰</div>
+        <div class="secret-gate" onclick="handleSecret()"></div>
+    </header>
+
+    <div id="chat-area">
+        <div class="ai-row" id="main-ai">
+            <div class="ai-reply-box" id="ai-msg">Aira Hunter Ready Muthe! ✨</div>
+        </div>
+    </div>
+
+    <div class="bottom-section">
+        <div class="input-pill" id="inputPill">
+            <div style="color: var(--accent-color); font-size: 24px; cursor: pointer; font-weight: bold;" onclick="document.getElementById('fileIn').click()">+</div>
+            <input type="text" id="userInput" placeholder="Message Aira..." autocomplete="off">
+            <div class="mic-container" id="micBtn" onclick="toggleMic()">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+            <div style="font-size: 28px; color: var(--accent-color); cursor: pointer; transform: rotate(-15deg);" onclick="sendMsg()">➤</div>
+        </div>
+    </div>
+
+    <input type="file" id="fileIn" style="display:none" onchange="handleFile(this)">
+
+    <div id="secret-room">
+        <div style="padding: 15px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; background: #000; position: relative;">
+            <span style="color: var(--gemini-purple); font-weight: bold;">🤫 Private Aira</span>
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <div style="width: 40px; height: 40px; background: transparent; cursor: pointer;" onclick="handleAdmin()"></div>
+                <button onclick="closeAll()" style="background: none; border: none; color: #555; font-size: 20px;">✕</button>
+            </div>
+        </div>
+        <div id="secret-chat-display">
+            <div class="secret-msg aira-secret">Ivide nammal maathrame ulloo muthe... 🤐</div>
+        </div>
+        <div style="padding: 15px; background: #000; display: flex; gap: 10px;">
+            <input type="text" id="secretInput" placeholder="Secret message..." style="flex-grow: 1; background: #111; border: 1px solid #333; border-radius: 20px; padding: 10px 15px; color: white; outline: none;">
+            <button onclick="sendSecretMsg()" style="background: var(--gemini-purple); border: none; border-radius: 50%; width: 40px; height: 40px; color: white;">➤</button>
+        </div>
+    </div>
+
+    <div id="admin-pannel">
+        <h1 style="color: var(--gemini-blue); text-align: center;">🛡️ Admin Pannel</h1>
+        <div style="flex-grow: 1;">
+            <button class="admin-btn">📊 View Logs</button>
+            <button class="admin-btn" style="color: var(--danger);">🚫 Ban Users</button>
+            <button class="admin-btn">⚙️ System Reset</button>
+        </div>
+        <button class="admin-btn" style="background: #222;" onclick="document.getElementById('admin-pannel').style.display='none'">Back to Secret</button>
+    </div>
+
+    <script>
+        const ADMIN_PW = "566068";
+        const root = document.documentElement;
+
+        function sendMsg() {
+            let v = document.getElementById('userInput').value.trim();
+            if(!v) return;
+            document.getElementById('main-ai').classList.add('thinking');
+            document.getElementById('ai-msg').innerText = "Aira is thinking... 💫";
+            setTimeout(() => {
+                document.getElementById('main-ai').classList.remove('thinking');
+                document.getElementById('ai-msg').innerHTML = "✨ <b>Aira:</b> " + v;
+            }, 1200);
+            document.getElementById('userInput').value = "";
+        }
+
+        function sendSecretMsg() {
+            let inp = document.getElementById('secretInput');
+            let val = inp.value.trim();
+            if(!val) return;
+            let display = document.getElementById('secret-chat-display');
+            display.innerHTML += `<div class="secret-msg user-secret">${val}</div>`;
+            inp.value = "";
+            setTimeout(() => {
+                display.innerHTML += `<div class="secret-msg aira-secret">Aira Secret: Njan ithu arodum parayilla... 😉</div>`;
+                display.scrollTop = display.scrollHeight;
+            }, 800);
+        }
+
+        function handleSecret() {
+            let p = prompt("Enter Master Key:");
+            if(p === ADMIN_PW) { document.getElementById('secret-room').style.display = 'flex'; }
+        }
+
+        function handleAdmin() {
+            let p = prompt("Admin Authorization Required:");
+            if(p === ADMIN_PW) { document.getElementById('admin-pannel').style.display = 'flex'; }
+        }
+
+        function handleFile(input) { if (input.files && input.files[0]) { alert("File attached!"); } }
+
+        function toggleMic() {
+            const m = document.getElementById('micBtn');
+            m.classList.toggle('active');
+            if(m.classList.contains('active')) setTimeout(() => m.classList.remove('active'), 2500);
+        }
+
+        function toggleMenu() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').style.display = 'block'; }
+        
+        function closeAll() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('secret-room').style.display = 'none';
+            document.getElementById('admin-pannel').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        function upgradeToPremium() {
+            root.style.setProperty('--accent-color', '#ffd700');
+            root.style.setProperty('--glow-color', 'rgba(255, 215, 0, 0.5)');
+            closeAll();
+        }
+
+        root.style.setProperty('--glow-color', 'rgba(66, 133, 244, 0.5)');
+    </script>
+</body>
+</html>
